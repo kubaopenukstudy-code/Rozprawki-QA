@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <title>ARKUSZ EGZAMINACYJNY</title>
+    <style>
+        /* TUTAJ WPISZ SWÓJ CSS, ŻEBY WYGLĄDAŁO IDENTYCZNIE JAK NA EGZAMINIE */
+        body { font-family: "Times New Roman", serif; background: #ffffff; margin: 40px; color: #000; }
+        .header { border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px; }
+        .Instrukcja { font-style: italic; background: #f9f9f9; padding: 15px; border: 1px solid #ccc; }
+        textarea { width: 100%; height: 400px; font-size: 16px; font-family: "Times New Roman", serif; pading: 15px; border: 1px solid #000; resize: none; }
+        .status { text-align: right; color: green; font-size: 12px; margin-top: 5px; }
+        .counter { font-weight: bold; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h2>EGZAMIN CERTYFIKACYJNY - CZĘŚĆ PISEMNA</h2>
+        <p><strong>Temat:</strong> Rozprawka na temat wpływu sztucznej inteligencji na edukację wyższą.</p>
+    </div>
+
+    <div class="instrukcja">
+        <strong>Ważne:</strong> Praca zapisuje się automatycznie. Wklejanie tekstu z zewnętrznych źródeł jest zablokowane. Min. 250 słów.
+    </div>
+
+    <br>
+    <textarea id="esej" placeholder="Zacznij pisać tutaj..." oninput="zliczSlowa()"></textarea>
+    <div class="status" id="status">Zapisano.</div>
+    <div class="counter">Liczba słów: <span id="word-count">0</span></div>
+
+    <script>
+        const poleTekstowe = document.getElementById('esej');
+        const statusDiv = document.getElementById('status');
+
+        // Ładowanie zapisanej pracy przy wejściu
+        async function ladujPrace() {
+            const res = await fetch('/api/rozprawka');
+            const data = await res.json();
+            poleTekstowe.value = data.tresc || "";
+            zliczSlowa();
+        }
+
+        // Automatyczny zapis co 5 sekund podczas pisania
+        let timeoutZpisu;
+        poleTekstowe.addEventListener('input', () => {
+            statusDiv.innerText = "Piszesz... (oczekiwanie na zapis)";
+            clearTimeout(timeoutZpisu);
+            timeoutZpisu = setTimeout(async () => {
+                await fetch('/api/zapisz', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ tresc: poleTekstowe.value })
+                });
+                statusDiv.innerText = "Wszystkie zmiany zostały zapisane automatycznie.";
+            }, 2000); // zapisuje 2 sekundy po tym, jak student przestanie pisać
+        });
+
+        // Blokada wklejania tekstu (anty-ściąganie)
+        poleTekstowe.addEventListener('paste', (e) => {
+            e.preventDefault();
+            alert('Wklejanie tekstu na tym egzaminie jest zablokowane!');
+        });
+
+        function zliczSlowa() {
+            const tekst = poleTekstowe.value.trim();
+            const slowa = tekst ? tekst.split(/\s+/).length : 0;
+            document.getElementById('word-count').innerText = slowa;
+        }
+
+        ladujPrace();
+    </script>
+</body>
+</html>
