@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <title>Panel Profesora</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 30px; background: #f8f9fa; }
+        .box { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #343a40; color: white; }
+        pre { background: #eee; padding: 10px; white-space: pre-wrap; word-wrap: break-word; }
+    </style>
+</head>
+<body>
+    <h1>Panel Zarządzania Egzaminem</h1>
+
+    <div class="box">
+        <h3>Dodaj nowego studenta</h3>
+        <input type="text" id="new-user" placeholder="Login / Indeks">
+        <input type="text" id="new-pass" placeholder="Hasło">
+        <button onclick="dodajStudenta()">Dodaj Studenta</button>
+    </div>
+
+    <div class="box">
+        <h3>Prace Studentów (Kliknij studenta, aby rozwinąć pracę)</h3>
+        <button onclick="pobierzPrace()">Odśwież wyniki</button>
+        <table>
+            <thead>
+                <tr>
+                    <th>Student (Login)</th>
+                    <th>Ostatnia aktywność</th>
+                    <th>Treść rozprawki</th>
+                </tr>
+            </thead>
+            <tbody id="tabela-prac"></tbody>
+        </table>
+    </div>
+
+    <script>
+        async function dodajStudenta() {
+            const user = document.getElementById('new-user').value;
+            const pass = document.getElementById('new-pass').value;
+            const res = await fetch('/api/admin/dodaj-studenta', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ username: user, password: pass })
+            });
+            const data = await res.json();
+            if(data.success) {
+                alert('Student dodany pomyślnie!');
+                pobierzPrace();
+            } else {
+                alert(data.message);
+            }
+        }
+
+        async function pobierzPrace() {
+            const res = await fetch('/api/admin/prace');
+            const dane = await res.json();
+            const tbody = document.getElementById('tabela-prac');
+            tbody.innerHTML = '';
+            
+            dane.forEach(p => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong>${p.username}</strong></td>
+                    <td>${p.ostatnia_aktualizacja ? new Date(p.ostatnia_aktualizacja).toLocaleString() : 'Nie uruchomiono'}</td>
+                    <td><pre>${p.tresc || '[Brak wpisu]'}</pre></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        pobierzPrace();
+    </script>
+</body>
+</html>
